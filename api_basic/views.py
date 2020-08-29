@@ -1,20 +1,31 @@
-from django.shortcuts import render
-from django.http import HttpResponse, JsonResponse
-from rest_framework.parsers import JSONParser
 from .models import Article
 from .serializers import ArticleSerializer
+from rest_framework import viewsets
+from rest_framework.response import Response
+from rest_framework import status
+from django.shortcuts import get_object_or_404
 
-@csrf_exempt
-def article_list(request):
-    if request.method =='GET':
+
+
+
+class ArticleViewSet(viewsets.ViewSet):
+
+    def list(self, request):
         articles = Article.objects.all()
         serializer = ArticleSerializer(articles, many=True)
-        return JsonResponse(serializer.data, safe=False)
+        return Response(serializer.data)
 
-    elif request.method == 'POST':
-        data = JSONParser().parse(request)
-        serializer = ArticleSerializer(data=data)
+
+    def create(self, request):
+        serializer = ArticleSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
-            return JsonResponse(serializer.data, status=201)
-        return JsonResponse(serializer.errors, status=400)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+    def retrieve(self, request, pk=None):
+        queryset = Article.objects.all()
+        article = get_object_or_404(queryset, pk=pk)
+        serializer = ArticleSerializer(article)
+        return Response(serializer.data)
